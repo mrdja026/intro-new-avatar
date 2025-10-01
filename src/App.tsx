@@ -1,8 +1,10 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 import { Hud } from './components/Hud';
+import { TransformInspector } from './components/TransformInspector';
 import { Transition } from './components/Transition';
 import { useSceneStore } from './store';
 import { SceneCode } from './scenes/SceneCode';
@@ -53,9 +55,18 @@ function App() {
         <Suspense fallback={null}>
           <CurrentScene />
         </Suspense>
+        <OrbitControls
+          makeDefault
+          enableZoom
+          enablePan={false}
+          enableRotate
+          zoomSpeed={0.7}
+          rotateSpeed={0.85}
+        />
       </Canvas>
       <Hud />
       <Transition triggerKey={transitionKey} durationMs={600} />
+      <TransformInspector />
       <div
         style={{
           position: 'absolute',

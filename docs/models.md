@@ -1,89 +1,25 @@
-# ✅ CODEX PROMPT: Add a Low-Poly Model (Bed Example)
+# Models & Components
 
-You are a senior Three.js + React developer. Update the existing **voxel career break film** (React + Vite + React-Three-Fiber + Drei + Zustand) to support **imported GLTF models** in addition to voxel primitives. Demonstrate this by adding a **low-poly bed model** for the “Sleeping” and “Reading” scenes.
+## Core Characters
+- `src/components/VoxelPerson.tsx` renders the blocky avatar used in the intro, sleep, and read scenes. Limbs and head are box primitives that respond to the `pose` prop (`'sleeping' | 'reading' | 'typing'`). The component exposes optional `scale` and `color` overrides and animates arms while typing via `useFrame`.
+- `src/components/SmoothPerson.tsx` provides the rounded low-poly variant for the coding vignette. It is built from cylinders, spheres, and a torus collar, with subtle typing motion baked in. Swap this in when you need a softer silhouette without rewriting scene logic.
 
-## Requirements
+## Shared Room Shell
+- Both `src/scenes/SceneSleep.tsx` and `src/scenes/SceneRead.tsx` share the same warm bedroom set: walls, trims, window glow, rug, nightstand, lamp, and plant are all combinations of boxes, cylinders, and cones. Camera easing is handled with `useFrame` to keep slow orbits consistent between scenes.
+- The reading scene positions the `VoxelPerson` with the `reading` pose and adds a glowing tablet (simple emissive box) plus three `AuraParticle` planes that orbit above the screen for a gentle shine.
+- The sleep scene reuses the voxel bed layout and layers floating `FloatingZ` text meshes. Each `Z` owns its own randomised drift path so the spacing stays organic across transitions.
 
-1. **Dependencies**
+## Coding Studio Set
+- `src/scenes/SceneCode.tsx` composes a matching room shell, a multi-part desk (`deskMaterial` for the top, `deskBaseMaterial` for supports), and a monitor that hosts the `codeRain` shader from `src/shaders/codeRain.ts`. The `Lightbulb` component (`src/components/Lightbulb.tsx`) spawns emissive bulbs that orbit the coder, each with its own point light.
+- The same scene swaps in the `SmoothPerson` and the existing `VoxelPerson` typing pose (for animation reuse) so you can choose whichever silhouette suits the shot.
 
-   - Already installed: `three`, `@react-three/fiber`, `@react-three/drei`, `zustand`.
-   - Add `three-stdlib` if not present.
+## Effects & Utilities
+- `src/components/Transition.tsx` handles the fade-to-black overlay during scene swaps. Use the `triggerKey` pattern if you add more stateful transitions.
+- `src/components/Hud.tsx` renders the on-screen controls; scene names flow from the zustand store in `src/store.ts` so any new scene should register there.
+- `src/utils/random.ts` houses the deterministic helper used by the floating Zs and other looping particles, helping keep animations stable between reloads.
 
-   ```bash
-   npm i three-stdlib
-   ```
+## Extending the Library
+- New props should follow the existing naming (`pose`, `color`, `durationMs`) and default to lightweight primitives so the bundle stays GLTF-free.
+- When building an additional vignette, start by reusing one of the room shells, then compose new props beside the existing components to stay consistent with the project�s cosy visual language.
 
-2. **Asset Setup**
 
-   - Create a folder `public/models/`.
-   - Place a placeholder model `bed.glb` there (Codex should generate a dummy cube export or instructions to download a free low-poly bed from Sketchfab/PolyPizza and save it as `public/models/bed.glb`).
-   - Ensure Vite copies from `public/`.
-
-3. **New Component: `BedModel.tsx`**
-
-   - Uses Drei’s `useGLTF` to load `/models/bed.glb`.
-   - Returns a `<primitive object={scene} />` with scale + rotation props.
-   - Typescript safe.
-
-   ```tsx
-   import { useGLTF } from "@react-three/drei";
-
-   export function BedModel(props: JSX.IntrinsicElements["group"]) {
-     const { scene } = useGLTF("/models/bed.glb");
-     return <primitive object={scene} {...props} />;
-   }
-
-   useGLTF.preload("/models/bed.glb");
-   ```
-
-4. **Scene Integration**
-
-   - In `SceneSleep.tsx`:
-
-     - Replace voxel bed with `<BedModel position={[0,0,0]} scale={0.8} />`.
-
-   - In `SceneRead.tsx`:
-
-     - Same `<BedModel>` behind the voxel person.
-
-   - Keep voxel person + floating “Zzz” / glowing book.
-
-5. **File Tree Additions**
-
-   ```
-   src/
-     components/
-       BedModel.tsx
-   public/
-     models/
-       bed.glb
-   ```
-
-6. **Run Instructions**
-
-   ```bash
-   npm run dev
-   # open http://localhost:5173
-   # Switch to Sleep (scene 2) or Read (scene 3) and you’ll see imported BedModel instead of voxel bed
-   ```
-
----
-
-### Deliverables
-
-- **Full contents** for `src/components/BedModel.tsx`.
-- Updated code snippets in `SceneSleep.tsx` and `SceneRead.tsx` showing how `BedModel` replaces voxel bed.
-- A stub `public/models/bed.glb` (Codex may generate a cube as placeholder, but instruct the user to swap it with a real downloaded low-poly bed later).
-
----
-
-⚡ End of prompt. Codex should output:
-
-1. Terminal command to add `three-stdlib` (if missing).
-2. New file `src/components/BedModel.tsx`.
-3. Updated `SceneSleep.tsx` and `SceneRead.tsx`.
-4. Instruction about adding `public/models/bed.glb` manually.
-
----
-
-Do you want me to also prep a **second example** (like swapping in a low-poly desk + monitor for the coding scene) so you see how to scale beyond just the bed?
