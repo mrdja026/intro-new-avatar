@@ -41,14 +41,14 @@ const poseConfigMap: Record<VoxelPersonPose, PoseConfig> = {
     rightArmPosition: [TORSO.width * 0.45, LEG.length + TORSO.height - 0.05, 0.15],
   },
   reading: {
-    torsoRotation: [0.2, 0, 0],
-    headRotation: [-0.15, 0.12, 0],
-    leftArmRotation: [-0.6, 0.5, -0.2],
-    rightArmRotation: [-0.5, -0.6, 0.35],
-    leftLegRotation: [0.4, 0.15, 0],
-    rightLegRotation: [0.2, -0.2, 0],
-    leftArmPosition: [-TORSO.width * 0.45, LEG.length + TORSO.height - 0.05, 0.1],
-    rightArmPosition: [TORSO.width * 0.45, LEG.length + TORSO.height - 0.05, 0.1],
+    torsoRotation: [-0.35, 0.05, 0.1],
+    headRotation: [-0.1, 0.18, 0],
+    leftArmRotation: [-1.1, 0.45, -0.2],
+    rightArmRotation: [-1.0, -0.5, 0.28],
+    leftLegRotation: [1.2, 0.25, 0.05],
+    rightLegRotation: [1.1, -0.18, -0.04],
+    leftArmPosition: [-TORSO.width * 0.42, LEG.length + TORSO.height - 0.02, 0.18],
+    rightArmPosition: [TORSO.width * 0.42, LEG.length + TORSO.height - 0.02, 0.18],
   },
   typing: {
     torsoRotation: [0.1, 0, 0],
@@ -154,3 +154,5 @@ export function VoxelPerson({ pose, scale = 1, color = '#8fb4ff', ...rest }: Vox
     </group>
   );
 }
+
+

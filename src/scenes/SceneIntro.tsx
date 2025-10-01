@@ -8,58 +8,82 @@ export function SceneIntro() {
   const titleGroup = useRef<THREE.Group>(null);
 
   useEffect(() => {
-    camera.position.set(0, 1.25, 6);
-    camera.lookAt(0, 1.1, 0);
+    camera.position.set(0.4, 1.35, 5.4);
+    camera.lookAt(0, 1.2, 0);
   }, [camera]);
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
-    camera.position.x = Math.sin(t * 0.25) * 0.4;
-    camera.position.z = 6 - Math.cos(t * 0.35) * 0.35;
-    camera.lookAt(0, 1.05, 0);
+    camera.position.x = 0.4 + Math.sin(t * 0.22) * 0.45;
+    camera.position.z = 5.4 - Math.cos(t * 0.28) * 0.35;
+    camera.lookAt(0, 1.2 + Math.sin(t * 0.18) * 0.04, 0);
 
     if (titleGroup.current) {
-      titleGroup.current.rotation.y = Math.sin(t * 0.3) * 0.12;
-      titleGroup.current.position.y = 1.4 + Math.sin(t * 0.5) * 0.05;
+      titleGroup.current.rotation.y = Math.sin(t * 0.25) * 0.15;
+      titleGroup.current.position.y = 1.5 + Math.sin(t * 0.45) * 0.08;
     }
   });
 
   const titleMaterial = useMemo(() => {
-    const material = new THREE.MeshStandardMaterial({ color: new THREE.Color('#e0f1ff') });
-    material.metalness = 1;
-    material.roughness = 0.18;
-    material.envMapIntensity = 1.2;
+    const material = new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#0f1c41'),
+      emissive: new THREE.Color('#4a7dff'),
+      emissiveIntensity: 0.7,
+      metalness: 0.75,
+      roughness: 0.22,
+    });
     return material;
   }, []);
 
   const subtitleMaterial = useMemo(() => {
-    const material = new THREE.MeshStandardMaterial({ color: new THREE.Color('#9eb8ff') });
-    material.metalness = 0.6;
-    material.roughness = 0.3;
+    const material = new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#14306c'),
+      emissive: new THREE.Color('#7aa9ff'),
+      emissiveIntensity: 0.45,
+      roughness: 0.3,
+    });
     return material;
+  }, []);
+
+  const glowMaterial = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      color: '#c9dbff',
+      emissive: new THREE.Color('#dff2ff'),
+      emissiveIntensity: 1.4,
+      roughness: 0.85,
+    });
+    mat.transparent = true;
+    mat.opacity = 0.92;
+    return mat;
   }, []);
 
   useEffect(() => {
     return () => {
       titleMaterial.dispose();
       subtitleMaterial.dispose();
+      glowMaterial.dispose();
     };
-  }, [titleMaterial, subtitleMaterial]);
+  }, [titleMaterial, subtitleMaterial, glowMaterial]);
 
   return (
     <group>
-      <color attach="background" args={[0x050608]} />
-      <fog attach="fog" args={[0x050608, 10, 24]} />
+      <color attach="background" args={['#d2e5ff']} />
+      <fog attach="fog" args={[0xd2e5ff, 12, 28]} />
 
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[3, 5, 4]} intensity={1.1} color={0xc8e0ff} />
-      <directionalLight position={[-5, 3, -3]} intensity={0.6} color={0x304070} />
-      <pointLight position={[0, 2.2, 1.8]} intensity={1.4} color={0x8bccff} />
+      <ambientLight intensity={0.65} color={0xf7fbff} />
+      <directionalLight position={[2.4, 5.2, 3.6]} intensity={0.9} color={0xfff2d1} castShadow />
+      <directionalLight position={[-4, 3.5, -2.5]} intensity={0.6} color={0x8dbaff} />
+      <pointLight position={[0, 2.6, 1.8]} intensity={1.1} color={0x9acbff} />
+
+      <mesh position={[0, 1.4, -1.2]}>
+        <planeGeometry args={[6, 3.6]} />
+        <primitive object={glowMaterial} />
+      </mesh>
 
       <group ref={titleGroup}>
         <Text
-          fontSize={0.8}
-          letterSpacing={0.04}
+          fontSize={0.95}
+          letterSpacing={0.045}
           anchorX="center"
           anchorY="middle"
           material={titleMaterial}
@@ -67,28 +91,28 @@ export function SceneIntro() {
           Career Break
         </Text>
         <Text
-          position={[0, -0.8, 0]}
-          fontSize={0.28}
+          position={[0, -0.82, 0]}
+          fontSize={0.32}
           anchorX="center"
           anchorY="middle"
           material={subtitleMaterial}
         >
-          chilling • reading • coding • sleeping
+          Chilling · Reading · Coding · Sleeping
         </Text>
       </group>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <circleGeometry args={[10, 48]} />
-        <meshStandardMaterial color="#101522" roughness={0.8} metalness={0.1} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
+        <circleGeometry args={[12, 56]} />
+        <meshStandardMaterial color="#b8c9ef" roughness={0.92} metalness={0.04} />
       </mesh>
 
-      <mesh position={[-2.2, 2.4, -2.8]}>
-        <sphereGeometry args={[0.4, 32, 32]} />
-        <meshStandardMaterial emissive="#3f66ff" emissiveIntensity={1.4} color="#101020" />
+      <mesh position={[-2.4, 2.5, -2.6]}>
+        <sphereGeometry args={[0.45, 32, 32]} />
+        <meshStandardMaterial emissive="#5a8dff" emissiveIntensity={1.6} color="#d9ecff" />
       </mesh>
-      <mesh position={[2.6, 1.6, -1.4]}>
-        <sphereGeometry args={[0.28, 32, 32]} />
-        <meshStandardMaterial emissive="#ff9d5c" emissiveIntensity={0.9} color="#281910" />
+      <mesh position={[2.8, 1.4, -1.2]}>
+        <sphereGeometry args={[0.32, 32, 32]} />
+        <meshStandardMaterial emissive="#ffd19a" emissiveIntensity={1} color="#fff2dd" />
       </mesh>
     </group>
   );

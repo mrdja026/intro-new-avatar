@@ -4,37 +4,19 @@ import * as THREE from 'three';
 
 import { VoxelPerson } from '../components/VoxelPerson';
 
-function useBedMaterials() {
-  const frame = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x1c2436, roughness: 0.55, metalness: 0.15 }), []);
-  const mattress = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x202c46, roughness: 0.7 }), []);
-  const pillow = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x2d3d5e, roughness: 0.4 }), []);
-
-  useEffect(() => {
-    return () => {
-      frame.dispose();
-      mattress.dispose();
-      pillow.dispose();
-    };
-  }, [frame, mattress, pillow]);
-
-  return { frame, mattress, pillow };
-}
-
-type AuraProps = {
-  seed: number;
-  radius: number;
-  height: number;
-};
-
-function AuraParticle({ seed, radius, height }: AuraProps) {
+function AuraParticle({ seed }: { seed: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const material = useMemo(() => {
-    const mat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color('#6bc6ff'),
-      transparent: true,
-      opacity: 0.55,
-      side: THREE.DoubleSide,
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: new THREE.Color('#ffe6a8'),
+      emissiveIntensity: 1.4,
+      roughness: 0.6,
+      metalness: 0,
     });
+    mat.transparent = true;
+    mat.opacity = 0.55;
+    mat.depthWrite = false;
     return mat;
   }, []);
 
@@ -43,25 +25,24 @@ function AuraParticle({ seed, radius, height }: AuraProps) {
   useFrame((state) => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    const t = state.clock.getElapsedTime() + seed * 0.4;
-    const angle = t * 0.6 + seed;
-    const y = height + Math.sin(t * 1.7 + seed) * 0.15;
-    mesh.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
-    mesh.quaternion.copy(state.camera.quaternion);
-    material.opacity = 0.45 + Math.sin(t * 2.2 + seed) * 0.18;
+    const t = state.clock.getElapsedTime() + seed * 0.3;
+    const radius = 0.22 + 0.04 * seed;
+    mesh.position.set(Math.cos(t * 1.2) * radius, 0.12 + Math.sin(t * 1.8) * 0.06, Math.sin(t * 1.2) * radius);
+    material.opacity = 0.45 + Math.sin(t * 2.4) * 0.15;
   });
 
   return (
-    <mesh ref={meshRef} material={material}>
-      <planeGeometry args={[0.24, 0.24]} />
+    <mesh ref={meshRef}>
+      <planeGeometry args={[0.14, 0.14]} />
+      <primitive object={material} />
     </mesh>
   );
 }
 
 export function SceneRead() {
   const { camera } = useThree();
-  const desiredCamera = useRef(new THREE.Vector3(-2.2, 1.9, 4.1));
-  const lookTarget = useRef(new THREE.Vector3(0, 1.1, 0.2));
+  const desiredCamera = useRef(new THREE.Vector3(-2.4, 1.95, 4.1));
+  const lookTarget = useRef(new THREE.Vector3(0, 1.05, 0.2));
 
   useEffect(() => {
     camera.position.copy(desiredCamera.current);
@@ -71,184 +52,219 @@ export function SceneRead() {
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
     desiredCamera.current.set(
-      -2.2 + Math.sin(t * 0.17) * 0.4,
-      1.85 + Math.sin(t * 0.2) * 0.12,
-      4 + Math.cos(t * 0.18) * 0.32,
+      -2.3 + Math.sin(t * 0.17) * 0.42,
+      1.95 + Math.sin(t * 0.2) * 0.14,
+      4 + Math.cos(t * 0.16) * 0.32,
     );
     camera.position.lerp(desiredCamera.current, 0.05);
 
     lookTarget.current.set(
-      0.15 + Math.sin(t * 0.14) * 0.12,
-      1.05 + Math.sin(t * 0.2) * 0.08,
-      0.2 + Math.cos(t * 0.16) * 0.06,
+      0.1 + Math.sin(t * 0.14) * 0.1,
+      1.05 + Math.sin(t * 0.21) * 0.08,
+      0.2 + Math.cos(t * 0.18) * 0.08,
     );
     camera.lookAt(lookTarget.current);
   });
 
-  const { frame, mattress, pillow } = useBedMaterials();
-
-  const bookMaterial = useMemo(() => {
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0x1b2338,
-      emissive: new THREE.Color('#7dd6ff'),
-      emissiveIntensity: 1.9,
-      roughness: 0.3,
-      metalness: 0.15,
-    });
-    return mat;
-  }, []);
-
-  useEffect(() => () => bookMaterial.dispose(), [bookMaterial]);
-
-  const wallMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x111a2b, roughness: 0.82, metalness: 0.06 }), []);
-  const floorMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x0d111b, roughness: 0.9, metalness: 0.04 }), []);
-  const carpetMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x1f2738, roughness: 0.92 }), []);
-  const windowFrameMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x2a374f, roughness: 0.5, metalness: 0.2 }), []);
+  const wallMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xf7e5d4, roughness: 0.7, metalness: 0.1 }), []);
+  const floorMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xf3ded0, roughness: 0.85, metalness: 0.05 }), []);
+  const ceilingMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xfff7ed, roughness: 0.95, metalness: 0 }), []);
+  const trimMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xe2c6b8, roughness: 0.7, metalness: 0.08 }), []);
+  const rugMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xe5caff, roughness: 0.92 }), []);
+  const windowFrameMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xeedbd0, roughness: 0.45, metalness: 0.18 }), []);
   const windowGlowMaterial = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x1f2435,
-      emissive: new THREE.Color('#ffb374'),
-      emissiveIntensity: 0.65,
-      roughness: 0.35,
+      color: 0xfff2de,
+      emissive: new THREE.Color('#ffd5a6'),
+      emissiveIntensity: 1,
+      roughness: 0.38,
+    });
+    mat.transparent = true;
+    mat.opacity = 0.8;
+    return mat;
+  }, []);
+  const nightstandMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xdcb9a8, roughness: 0.65, metalness: 0.18 }), []);
+  const lampBaseMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xb08c76, roughness: 0.5, metalness: 0.28 }), []);
+  const lampShadeMaterial = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xfff1d2,
+      emissive: new THREE.Color('#ffe7ad'),
+      emissiveIntensity: 1.15,
+      roughness: 0.4,
     });
     mat.transparent = true;
     mat.opacity = 0.78;
     return mat;
   }, []);
-  const shelfMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x252f45, roughness: 0.6, metalness: 0.2 }), []);
-  const accentBookMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xff7f5e, roughness: 0.4, metalness: 0.2 }), []);
-  const sideTableMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x2b364d, roughness: 0.55, metalness: 0.16 }), []);
-  const plantPotMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x2c3446, roughness: 0.6, metalness: 0.15 }), []);
-  const plantLeafMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x3f7a58, roughness: 0.45, metalness: 0.08 }), []);
+  const plantPotMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xdab8a2, roughness: 0.6, metalness: 0.18 }), []);
+  const plantLeafMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x9fcf8a, roughness: 0.35, metalness: 0.05 }), []);
+  const pillowMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xefe5ff, roughness: 0.4 }), []);
+  const mattressMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xe2d5fb, roughness: 0.7 }), []);
+  const bedMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xcabdf4, roughness: 0.55, metalness: 0.12 }), []);
+  const blanketMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xf3cce0, roughness: 0.5, metalness: 0.1 }), []);
+  const tabletMaterial = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x1b2338,
+      emissive: new THREE.Color('#9de7ff'),
+      emissiveIntensity: 2.2,
+      roughness: 0.22,
+      metalness: 0.18,
+    });
+    return mat;
+  }, []);
 
   useEffect(() => {
     return () => {
       wallMaterial.dispose();
       floorMaterial.dispose();
-      carpetMaterial.dispose();
+      ceilingMaterial.dispose();
+      trimMaterial.dispose();
+      rugMaterial.dispose();
       windowFrameMaterial.dispose();
       windowGlowMaterial.dispose();
-      shelfMaterial.dispose();
-      accentBookMaterial.dispose();
-      sideTableMaterial.dispose();
+      nightstandMaterial.dispose();
+      lampBaseMaterial.dispose();
+      lampShadeMaterial.dispose();
       plantPotMaterial.dispose();
       plantLeafMaterial.dispose();
+      pillowMaterial.dispose();
+      mattressMaterial.dispose();
+      bedMaterial.dispose();
+      blanketMaterial.dispose();
+      tabletMaterial.dispose();
     };
   }, [
     wallMaterial,
     floorMaterial,
-    carpetMaterial,
+    ceilingMaterial,
+    trimMaterial,
+    rugMaterial,
     windowFrameMaterial,
     windowGlowMaterial,
-    shelfMaterial,
-    accentBookMaterial,
-    sideTableMaterial,
+    nightstandMaterial,
+    lampBaseMaterial,
+    lampShadeMaterial,
     plantPotMaterial,
     plantLeafMaterial,
+    pillowMaterial,
+    mattressMaterial,
+    bedMaterial,
+    blanketMaterial,
+    tabletMaterial,
   ]);
+
+  const pillowPositions: [number, number, number][] = [
+    [-0.6, 0.9, 0],
+    [0.6, 0.9, 0],
+  ];
 
   return (
     <group>
-      <color attach="background" args={['#050608']} />
-      <ambientLight intensity={0.42} />
-      <spotLight
-        position={[-1.2, 3.2, 2.6]}
-        angle={0.55}
-        penumbra={0.7}
-        intensity={1.1}
-        color={0xa5c7ff}
-      />
-      <pointLight position={[0.8, 1.6, 0.8]} intensity={0.7} color={0xffb37a} distance={7} />
-      <pointLight position={[-2.6, 2.2, 2]} intensity={0.45} color={0x4b6da8} distance={9} />
+      <color attach="background" args={['#1a1115']} />
+      <hemisphereLight args={['#ffe5cc', '#7d5c5c', 0.5]} />
+      <ambientLight intensity={0.5} color={0xffeedf} />
+      <directionalLight position={[-2.6, 3.8, 1.6]} intensity={0.92} color={0xffe4c2} castShadow />
+      <spotLight position={[1.4, 3.1, 2.4]} intensity={0.88} angle={0.55} penumbra={0.6} color={0xfbd5b4} castShadow />
+      <pointLight position={[0.6, 2.3, -1.1]} intensity={0.48} color={0xf0b9a2} distance={7} />
 
       <group>
-        <mesh position={[0, 1.5, -2.8]} material={wallMaterial} receiveShadow>
-          <planeGeometry args={[9, 5]} />
+        <mesh position={[0, 2.5, -3.1]} material={wallMaterial} receiveShadow>
+          <planeGeometry args={[10, 5]} />
         </mesh>
-        <mesh position={[4.8, 1.5, 0]} rotation={[0, Math.PI / 2, 0]} material={wallMaterial} receiveShadow>
+        <mesh position={[5, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} material={wallMaterial} receiveShadow>
           <planeGeometry args={[6, 5]} />
+        </mesh>
+        <mesh position={[0, 2.5, 1.8]} rotation={[0, Math.PI, 0]} material={wallMaterial} receiveShadow>
+          <planeGeometry args={[10, 5]} />
         </mesh>
         <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} material={floorMaterial} receiveShadow>
           <planeGeometry args={[15, 12]} />
         </mesh>
-        <mesh position={[0, 0.01, 0.4]} rotation={[-Math.PI / 2, 0, 0]} material={carpetMaterial} receiveShadow>
+        <mesh position={[0, 3, 0]} rotation={[Math.PI / 2, 0, 0]} material={ceilingMaterial}>
+          <planeGeometry args={[15, 12]} />
+        </mesh>
+        <mesh position={[0, 0.6, -3.09]} material={trimMaterial}>
+          <boxGeometry args={[10, 0.2, 0.2]} />
+        </mesh>
+        <mesh position={[0, 0.6, 1.79]} material={trimMaterial}>
+          <boxGeometry args={[10, 0.2, 0.2]} />
+        </mesh>
+        <mesh position={[0, 3.45, -3.08]} material={trimMaterial}>
+          <boxGeometry args={[10, 0.15, 0.2]} />
+        </mesh>
+        <mesh position={[1.8, 1.8, -3.05]} material={windowFrameMaterial}>
+          <boxGeometry args={[2.8, 2, 0.2]} />
+        </mesh>
+        <mesh position={[1.8, 1.8, -3.02]} material={windowGlowMaterial}>
+          <boxGeometry args={[2.4, 1.6, 0.06]} />
+        </mesh>
+        <mesh position={[-1.6, 1.9, -3.04]} material={trimMaterial}>
+          <boxGeometry args={[1.4, 1.05, 0.06]} />
+        </mesh>
+        <mesh position={[1.2, 0.02, 0.6]} rotation={[-Math.PI / 2, 0, 0]} material={rugMaterial} receiveShadow>
           <circleGeometry args={[1.9, 36]} />
         </mesh>
-        <mesh position={[1.6, 1.7, -2.78]} material={windowFrameMaterial}>
-          <planeGeometry args={[2.6, 1.7]} />
+      </group>
+
+      <group position={[-1.45, 0.55, 1.05]}>
+        <mesh material={nightstandMaterial} castShadow>
+          <boxGeometry args={[0.7, 0.56, 0.6]} />
         </mesh>
-        <mesh position={[1.6, 1.7, -2.77]} material={windowGlowMaterial}>
-          <planeGeometry args={[2.3, 1.4]} />
+        <mesh position={[0, 0.45, 0]} material={nightstandMaterial} castShadow>
+          <boxGeometry args={[0.7, 0.12, 0.6]} />
+        </mesh>
+        <mesh position={[0, 0.76, 0]} material={lampBaseMaterial} castShadow>
+          <cylinderGeometry args={[0.08, 0.1, 0.42, 12]} />
+        </mesh>
+        <mesh position={[0, 1.05, 0]} material={lampShadeMaterial} castShadow>
+          <cylinderGeometry args={[0.28, 0.2, 0.32, 18]} />
         </mesh>
       </group>
 
-      <group position={[2.3, 0.8, 0.3]}>
-        <mesh material={shelfMaterial} castShadow>
-          <boxGeometry args={[0.6, 1.6, 0.25]} />
-        </mesh>
-        <mesh position={[0, 0.5, 0.18]} material={accentBookMaterial} castShadow>
-          <boxGeometry args={[0.4, 0.18, 0.18]} />
-        </mesh>
-        <mesh position={[0, 0.1, 0.18]} material={accentBookMaterial} castShadow>
-          <boxGeometry args={[0.35, 0.14, 0.18]} />
-        </mesh>
-      </group>
-
-      <group position={[-1.2, 0.4, 1]}> 
-        <mesh material={sideTableMaterial} castShadow>
-          <boxGeometry args={[0.7, 0.5, 0.5]} />
-        </mesh>
-        <mesh position={[0, 0.35, 0]} material={sideTableMaterial} castShadow>
-          <boxGeometry args={[0.7, 0.12, 0.5]} />
-        </mesh>
-        <mesh position={[0.1, 0.6, 0]} material={accentBookMaterial} castShadow>
-          <boxGeometry args={[0.3, 0.12, 0.28]} />
-        </mesh>
-      </group>
-
-      <group position={[2.1, 0.18, -0.9]}>
+      <group position={[2.1, 0.2, -0.4]}>
         <mesh material={plantPotMaterial} castShadow>
-          <cylinderGeometry args={[0.22, 0.28, 0.26, 12]} />
+          <cylinderGeometry args={[0.28, 0.32, 0.33, 14]} />
         </mesh>
-        <mesh position={[0, 0.32, 0]} material={plantLeafMaterial} castShadow>
-          <coneGeometry args={[0.45, 0.6, 6]} />
+        <mesh position={[0, 0.42, 0]} material={plantLeafMaterial} castShadow>
+          <coneGeometry args={[0.55, 0.9, 6]} />
         </mesh>
       </group>
 
       <group>
-        <mesh position={[0, 0.35, 0]} material={frame} castShadow receiveShadow>
-          <boxGeometry args={[3.2, 0.4, 2]} />
+        <mesh position={[0, 0.45, 0]} material={bedMaterial} castShadow receiveShadow>
+          <boxGeometry args={[3.4, 0.45, 2.1]} />
         </mesh>
-        <mesh position={[0, 0.7, 0]} material={mattress} castShadow receiveShadow>
-          <boxGeometry args={[3.05, 0.3, 1.85]} />
+        <mesh position={[0, 0.85, 0]} material={mattressMaterial} castShadow receiveShadow>
+          <boxGeometry args={[3.25, 0.35, 1.95]} />
         </mesh>
-        <mesh position={[-0.6, 0.85, 0]} material={pillow}>
-          <boxGeometry args={[0.9, 0.24, 0.75]} />
+        <mesh position={[0, 1.05, 0.7]} material={blanketMaterial} castShadow>
+          <boxGeometry args={[3, 0.18, 1.2]} />
         </mesh>
-        <mesh position={[0.6, 0.85, 0]} material={pillow}>
-          <boxGeometry args={[0.9, 0.24, 0.75]} />
+        {pillowPositions.map(([px, py, pz]) => (
+          <mesh key={`pillow-${px}-${pz}`} position={[px, py, pz]} material={pillowMaterial} castShadow>
+            <boxGeometry args={[0.95, 0.25, 0.78]} />
+          </mesh>
+        ))}
+      </group>
+
+      <group position={[0.25, 1.12, 0.36]} rotation={[-0.2, Math.PI / 2, 0.15]}>
+        <mesh material={tabletMaterial} castShadow>
+          <boxGeometry args={[0.7, 0.05, 0.45]} />
         </mesh>
+        <group position={[0, 0.06, 0]}>
+          <AuraParticle seed={0} />
+          <AuraParticle seed={1} />
+          <AuraParticle seed={2} />
+        </group>
       </group>
 
       <VoxelPerson
         pose="reading"
         scale={0.95}
-        position={[-0.45, 0.65, 0]}
-        rotation={[0, Math.PI / 2, 0]}
+        position={[0.1, 1.08, 0.2]}
+        rotation={[-Math.PI / 2.1, Math.PI / 2, 0.22]}
         color="#8fb4ff"
       />
-
-      <group position={[0.32, 1.24, 0.32]} rotation={[0, Math.PI / 2, 0]}>
-        <mesh material={bookMaterial} castShadow>
-          <boxGeometry args={[0.72, 0.05, 0.5]} />
-        </mesh>
-      </group>
-
-      <group position={[0.32, 1.24, 0.32]}>
-        <AuraParticle seed={1} radius={0.32} height={0.16} />
-        <AuraParticle seed={2} radius={0.38} height={0.2} />
-        <AuraParticle seed={3} radius={0.44} height={0.18} />
-      </group>
     </group>
   );
 }
