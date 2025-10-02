@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Text } from '@react-three/drei';
-import { useFrame, useThree, type Euler } from '@react-three/fiber';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import * as THREE from 'three';
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Text, TransformControls } from "@react-three/drei";
+import { useFrame, useThree, type Euler } from "@react-three/fiber";
+import type { OrbitControls as OrbitControlsImpl, TransformControls as TransformControlsImpl } from "three-stdlib";
+import type { Group } from "three";
+import * as THREE from "three";
 
-import { BedModel } from '../components/BedModel';
-import { ManModel } from '../components/ManModel';
-import { RoomModel } from '../components/RoomModel';
-import { useTransformStore } from '../store/transforms';
-import { createRandom } from '../utils/random';
+import { ManModel } from "../components/ManModel";
+import { RoomModel } from "../components/RoomModel";
+import { useTransformStore, type TransformState } from "../store/transforms";
+import { createRandom } from "../utils/random";
+import { useTransformOrbitLock } from "../utils/useTransformOrbitLock";
 
 type TextMesh = THREE.Mesh & { material: THREE.Material | THREE.Material[] };
 
@@ -20,11 +21,14 @@ type FloatingZProps = {
 const ROOM_SCALE = 0.52;
 const ROOM_ROTATION: Euler = [0, -Math.PI / 2, 0];
 const ROOM_OFFSET: [number, number, number] = [0, -0.05, 0];
-const BED_OFFSET: [number, number, number] = [0.22, 0.0, -0.26];
+const BED_OFFSET: [number, number, number] = [0.22, 0, -0.26];
+const SLEEP_CAMERA_DEFAULT = {
+  position: [2, 1.5, 3.1] as [number, number, number],
+  target: [0.15, 1, -0.05] as [number, number, number],
+};
 
 function FloatingZ({ seed, origin }: FloatingZProps) {
   const textRef = useRef<TextMesh | null>(null);
-
   const assignRef = useCallback((mesh: THREE.Object3D | null) => {
     textRef.current = (mesh as TextMesh | null) ?? null;
   }, []);
@@ -73,14 +77,7 @@ function FloatingZ({ seed, origin }: FloatingZProps) {
   });
 
   return (
-    <Text
-      ref={assignRef}
-      position={origin}
-      fontSize={config.fontSize}
-      anchorX="center"
-      anchorY="middle"
-      color="#dceaff"
-    >
+    <Text ref={assignRef} position={origin} fontSize={config.fontSize} anchorX="center" anchorY="middle" color="#dceaff">
       Z
     </Text>
   );
@@ -89,16 +86,93 @@ function FloatingZ({ seed, origin }: FloatingZProps) {
 export function SceneSleep() {
   const { camera, controls } = useThree();
   const orbit = controls as OrbitControlsImpl | undefined;
+  const controlsRef = useRef<TransformControlsImpl | null>(null);
+  const characterRef = useRef<Group | null>(null);
+  const applyingCameraRef = useRef(false);
+
+  const editMode = useTransformStore((state) => state.editMode);
+  const controlMode = useTransformStore((state) => state.controlMode);
   const setActivePose = useTransformStore((state) => state.setActivePose);
-  const transform = useTransformStore((state) => state.transforms.sleeping);
+  const updateTransform = useTransformStore((state) => state.updateTransform);
+  const setCameraState = useTransformStore((state) => state.setCameraState);
+  const cameraState = useTransformStore((state) => state.cameras.sleeping);
+  const transformCacheRef = useRef<TransformState>(useTransformStore.getState().transforms.sleeping);
+  const applyTransform = useCallback((next: TransformState) => {
+    const node = characterRef.current;
+    if (!node) {
+      return;
+    }
+    const { position, rotation, scale } = next;
+    node.position.set(...position);
+    node.rotation.set(...rotation);
+    node.scale.set(...scale);
+  }, []);
 
   useEffect(() => {
-    setActivePose('sleeping');
-    camera.position.set(2, 1.5, 3.1);
-    camera.lookAt(0.15, 1, -0.05);
-    orbit?.target.set(0.15, 1, -0.05);
+    setActivePose("sleeping");
+  }, [setActivePose]);
+
+  useEffect(() => {
+    const next = cameraState ?? SLEEP_CAMERA_DEFAULT;
+    applyingCameraRef.current = true;
+    camera.position.set(...next.position);
+    camera.lookAt(...next.target);
+    orbit?.target.set(...next.target);
     orbit?.update();
-  }, [camera, orbit, setActivePose]);
+    applyingCameraRef.current = false;
+  }, [cameraState, camera, orbit]);
+
+  useEffect(() => {
+    if (!orbit) {
+      return;
+    }
+    const handleEnd = () => {
+      if (applyingCameraRef.current) {
+        return;
+      }
+      setCameraState("sleeping", {
+        position: [camera.position.x, camera.position.y, camera.position.z],
+        target: [orbit.target.x, orbit.target.y, orbit.target.z],
+      });
+    };
+    orbit.addEventListener('end', handleEnd);
+    return () => {
+      orbit.removeEventListener('end', handleEnd);
+    };
+  }, [orbit, camera, setCameraState]);
+
+  useTransformOrbitLock(controlsRef, editMode);
+
+  useEffect(() => {
+    const initial = useTransformStore.getState().transforms.sleeping;
+    transformCacheRef.current = initial;
+    applyTransform(initial);
+
+    const unsubscribe = useTransformStore.subscribe((state) => {
+      const next = state.transforms.sleeping;
+      if (transformCacheRef.current === next) {
+        return;
+      }
+      transformCacheRef.current = next;
+      applyTransform(next);
+    });
+
+    return unsubscribe;
+  }, [applyTransform]);
+
+  useEffect(() => {
+    applyTransform(transformCacheRef.current);
+  }, [applyTransform, editMode]);
+
+  const handleObjectChange = useCallback(() => {
+    const node = characterRef.current;
+    if (!node) return;
+    updateTransform("sleeping", {
+      position: [node.position.x, node.position.y, node.position.z],
+      rotation: [node.rotation.x, node.rotation.y, node.rotation.z],
+      scale: [node.scale.x, node.scale.y, node.scale.z],
+    });
+  }, [updateTransform]);
 
   const zOrigins: [number, number, number][] = [
     [0.32, 0.6, -0.28],
@@ -108,16 +182,25 @@ export function SceneSleep() {
 
   return (
     <group>
-      <color attach="background" args={['#10070d']} />
-      <hemisphereLight args={['#ffe8d2', '#35242f', 0.55]} />
+      <color attach="background" args={["#10070d"]} />
+      <hemisphereLight args={["#ffe8d2", "#35242f", 0.55]} />
       <ambientLight intensity={0.55} color={0xfff1df} />
       <directionalLight position={[1.4, 3, 2.2]} intensity={0.9} color={0xffe7c2} castShadow />
 
       <RoomModel position={ROOM_OFFSET} scale={ROOM_SCALE} rotation={ROOM_ROTATION} />
 
       <group position={BED_OFFSET}>
-        <BedModel scale={0.62} />
-        <ManModel position={transform.position} rotation={transform.rotation} scale={transform.scale} />
+        {editMode ? (
+          <TransformControls ref={controlsRef} mode={controlMode} onObjectChange={handleObjectChange}>
+            <group ref={characterRef}>
+              <ManModel />
+            </group>
+          </TransformControls>
+        ) : (
+          <group ref={characterRef}>
+            <ManModel />
+          </group>
+        )}
       </group>
 
       {zOrigins.map((origin, index) => (
@@ -126,4 +209,3 @@ export function SceneSleep() {
     </group>
   );
 }
-

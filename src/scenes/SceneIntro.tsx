@@ -26,10 +26,10 @@ export function SceneIntro() {
 
   const titleMaterial = useMemo(() => {
     const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#0f1c41'),
-      emissive: new THREE.Color('#4a7dff'),
-      emissiveIntensity: 0.7,
-      metalness: 0.75,
+      color: new THREE.Color('#6b4cf0'),
+      emissive: new THREE.Color('#6b4cf0'),
+      emissiveIntensity: 0.75,
+      metalness: 0.35,
       roughness: 0.22,
     });
     return material;
@@ -37,23 +37,23 @@ export function SceneIntro() {
 
   const subtitleMaterial = useMemo(() => {
     const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#14306c'),
-      emissive: new THREE.Color('#7aa9ff'),
-      emissiveIntensity: 0.45,
-      roughness: 0.3,
+      color: new THREE.Color('#2f3c4a'),
+      emissive: new THREE.Color('#a1bdc7'),
+      emissiveIntensity: 0.35,
+      roughness: 0.32,
     });
     return material;
   }, []);
 
   const glowMaterial = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
-      color: '#c9dbff',
-      emissive: new THREE.Color('#dff2ff'),
-      emissiveIntensity: 1.4,
-      roughness: 0.85,
+      color: '#f2ece0',
+      emissive: new THREE.Color('#fbf4e6'),
+      emissiveIntensity: 0.95,
+      roughness: 0.9,
     });
     mat.transparent = true;
-    mat.opacity = 0.92;
+    mat.opacity = 0.95;
     return mat;
   }, []);
 
@@ -67,52 +67,52 @@ export function SceneIntro() {
 
   return (
     <group>
-      <color attach="background" args={['#d2e5ff']} />
-      <fog attach="fog" args={[0xd2e5ff, 12, 28]} />
+      <color attach="background" args={['#dfd7c5']} />
+      <fog attach="fog" args={[0xdfd7c5, 18, 32]} />
 
-      <ambientLight intensity={0.65} color={0xf7fbff} />
-      <directionalLight position={[2.4, 5.2, 3.6]} intensity={0.9} color={0xfff2d1} castShadow />
-      <directionalLight position={[-4, 3.5, -2.5]} intensity={0.6} color={0x8dbaff} />
-      <pointLight position={[0, 2.6, 1.8]} intensity={1.1} color={0x9acbff} />
+      <ambientLight intensity={0.75} color={0xdfd7c5} />
+      <directionalLight position={[2.4, 5.2, 3.6]} intensity={0.6} color={0xffe2c6} castShadow />
+      <directionalLight position={[-4, 3.5, -2.5]} intensity={0.45} color={0xbecbdb} />
+      <pointLight position={[0, 2.6, 1.8]} intensity={0.85} color={0xa1bdc7} />
 
-      <mesh position={[0, 1.4, -1.2]}>
-        <planeGeometry args={[6, 3.6]} />
+      <mesh position={[0, 1.35, -1.2]}>
+        <planeGeometry args={[6.4, 3.9]} />
         <primitive object={glowMaterial} />
       </mesh>
 
       <group ref={titleGroup}>
         <Text
-          fontSize={0.95}
-          letterSpacing={0.045}
+          fontSize={0.92}
+          letterSpacing={0.04}
           anchorX="center"
           anchorY="middle"
           material={titleMaterial}
         >
-          Career Break
+          Carier Break in 2025
         </Text>
         <Text
           position={[0, -0.82, 0]}
-          fontSize={0.32}
+          fontSize={0.3}
           anchorX="center"
           anchorY="middle"
           material={subtitleMaterial}
         >
-          Chilling · Reading · Coding · Sleeping
+          Chilling - Reading - Coding - Sleeping
         </Text>
       </group>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
         <circleGeometry args={[12, 56]} />
-        <meshStandardMaterial color="#b8c9ef" roughness={0.92} metalness={0.04} />
+        <meshStandardMaterial color="#efe5d3" roughness={0.93} metalness={0.04} />
       </mesh>
 
-      <mesh position={[-2.4, 2.5, -2.6]}>
+      <mesh position={[-2.4, 2.4, -2.6]}>
         <sphereGeometry args={[0.45, 32, 32]} />
-        <meshStandardMaterial emissive="#5a8dff" emissiveIntensity={1.6} color="#d9ecff" />
+        <meshStandardMaterial emissive="#6b4cf0" emissiveIntensity={1.1} color="#d8c8ff" />
       </mesh>
       <mesh position={[2.8, 1.4, -1.2]}>
         <sphereGeometry args={[0.32, 32, 32]} />
-        <meshStandardMaterial emissive="#ffd19a" emissiveIntensity={1} color="#fff2dd" />
+        <meshStandardMaterial emissive="#d38a54" emissiveIntensity={0.8} color="#f5d6b4" />
       </mesh>
     </group>
   );
