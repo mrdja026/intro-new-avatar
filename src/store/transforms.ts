@@ -1,5 +1,6 @@
 import { MathUtils } from 'three';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type CharacterPose = 'sleeping' | 'reading' | 'coding';
 export type TransformMode = 'translate' | 'rotate' | 'scale';
@@ -31,6 +32,8 @@ export type TransformStore = {
   updateTransform: (pose: CharacterPose, partial: Partial<TransformState>) => void;
   setCameraState: (pose: CharacterPose, camera: CameraState) => void;
   resetSceneState: () => void;
+  saveStateSnapshot: () => void;
+  loadStateSnapshot: () => void;
 };
 
 const STORAGE_KEY = 'three-vibe-film:scene-state:v1';
@@ -160,100 +163,116 @@ function vectorsEqual(a: [number, number, number], b: [number, number, number]):
   );
 }
 
-const initialTransforms = createDefaultTransforms();
-const initialCameras = createDefaultCameras();
-
-export const useTransformStore = create<TransformStore>((set, get) => ({
-  activePose: 'sleeping',
-  transforms: initialTransforms,
-  cameras: initialCameras,
-  editMode: false,
-  controlMode: 'translate',
-  setActivePose: (pose) => set({ activePose: pose }),
-  setEditMode: (value) => set({ editMode: value }),
-  setControlMode: (mode) => set({ controlMode: mode }),
-  updateTransform: (pose, partial) => {
-    const current = get().transforms[pose];
-    const next: TransformState = {
-      position: cloneVector(partial.position ?? current.position),
-      rotation: cloneVector(partial.rotation ?? current.rotation),
-      scale: cloneVector(partial.scale ?? current.scale),
-    };
-
-    if (
-      vectorsEqual(next.position, current.position) &&
-      vectorsEqual(next.rotation, current.rotation) &&
-      vectorsEqual(next.scale, current.scale)
-    ) {
-      return;
-    }
-
-    set((state) => ({
-      transforms: {
-        ...state.transforms,
-        [pose]: next,
-      },
-    }));
-  },
-  setCameraState: (pose, camera) => {
-    const current = get().cameras[pose];
-    if (
-      vectorsEqual(camera.position, current.position) &&
-      vectorsEqual(camera.target, current.target)
-    ) {
-      return;
-    }
-
-    set((state) => ({
-      cameras: {
-        ...state.cameras,
-        [pose]: {
-          position: cloneVector(camera.position),
-          target: cloneVector(camera.target),
-        },
-      },
-    }));
-  },
-  resetSceneState: () =>
-    set(() => ({
+export const useTransformStore = create<TransformStore>()(
+  persist(
+    (set, get) => ({
+      activePose: 'sleeping',
       transforms: createDefaultTransforms(),
       cameras: createDefaultCameras(),
-    })),
-}));
+      editMode: false,
+      controlMode: 'translate',
+      setActivePose: (pose) => set({ activePose: pose }),
+      setEditMode: (value) => set({ editMode: value }),
+      setControlMode: (mode) => set({ controlMode: mode }),
+      updateTransform: (pose, partial) => {
+        const current = get().transforms[pose];
+        const next: TransformState = {
+          position: cloneVector(partial.position ?? current.position),
+          rotation: cloneVector(partial.rotation ?? current.rotation),
+          scale: cloneVector(partial.scale ?? current.scale),
+        };
 
-if (typeof window !== 'undefined') {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<PersistedSnapshot>;
-      useTransformStore.setState((state) => ({
-        ...state,
-        transforms: hydrateTransforms(parsed?.transforms),
-        cameras: hydrateCameras(parsed?.cameras),
-      }));
-    }
-  } catch (error) {
-    console.warn('Failed to hydrate transform state', error);
-  }
+        if (
+          vectorsEqual(next.position, current.position) &&
+          vectorsEqual(next.rotation, current.rotation) &&
+          vectorsEqual(next.scale, current.scale)
+        ) {
+          return;
+        }
 
-  const selectPersisted = (state: TransformStore): PersistedSnapshot => ({
-    transforms: state.transforms,
-    cameras: state.cameras,
-  });
+        set((state) => ({
+          transforms: {
+            ...state.transforms,
+            [pose]: next,
+          },
+        }));
+      },
+      setCameraState: (pose, camera) => {
+        const current = get().cameras[pose];
+        if (
+          vectorsEqual(camera.position, current.position) &&
+          vectorsEqual(camera.target, current.target)
+        ) {
+          return;
+        }
 
-  const persistSnapshot = (snapshot: PersistedSnapshot) => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    } catch (error) {
-      console.warn('Failed to persist transform state', error);
-    }
-  };
-
-  persistSnapshot(selectPersisted(useTransformStore.getState()));
-  useTransformStore.subscribe((state) => {
-    persistSnapshot(selectPersisted(state));
-  });
-}
+        set((state) => ({
+          cameras: {
+            ...state.cameras,
+            [pose]: {
+              position: cloneVector(camera.position),
+              target: cloneVector(camera.target),
+            },
+          },
+        }));
+      },
+      resetSceneState: () =>
+        set(() => ({
+          transforms: createDefaultTransforms(),
+          cameras: createDefaultCameras(),
+        })),
+      saveStateSnapshot: () => {
+        if (typeof window === 'undefined') {
+          return;
+        }
+        try {
+          const snapshot: PersistedSnapshot = {
+            transforms: get().transforms,
+            cameras: get().cameras,
+          };
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        } catch (error) {
+          console.warn('Failed to persist transform state', error);
+        }
+      },
+      loadStateSnapshot: () => {
+        if (typeof window === 'undefined') {
+          return;
+        }
+        try {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            return;
+          }
+          const parsed = JSON.parse(raw) as Partial<PersistedSnapshot>;
+          set((state) => ({
+            ...state,
+            transforms: hydrateTransforms(parsed?.transforms),
+            cameras: hydrateCameras(parsed?.cameras),
+          }));
+        } catch (error) {
+          console.warn('Failed to hydrate transform state', error);
+        }
+      },
+    }),
+    {
+      name: STORAGE_KEY,
+      storage: typeof window === 'undefined' ? undefined : createJSONStorage(() => window.localStorage),
+      partialize: (state) => ({
+        transforms: state.transforms,
+        cameras: state.cameras,
+      }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<PersistedSnapshot> | undefined;
+        return {
+          ...currentState,
+          transforms: hydrateTransforms(persisted?.transforms),
+          cameras: hydrateCameras(persisted?.cameras),
+        };
+      },
+    },
+  ),
+);
 
 export function degreesToRadiansVector(values: [number, number, number]): [number, number, number] {
   return [

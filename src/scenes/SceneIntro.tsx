@@ -26,20 +26,20 @@ export function SceneIntro() {
 
   const titleMaterial = useMemo(() => {
     const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#1d1b2f'),
-      emissive: new THREE.Color('#7a5cff'),
-      emissiveIntensity: 0.6,
-      metalness: 0.55,
-      roughness: 0.28,
+      color: new THREE.Color('#6b4cf0'),
+      emissive: new THREE.Color('#6b4cf0'),
+      emissiveIntensity: 0.75,
+      metalness: 0.35,
+      roughness: 0.22,
     });
     return material;
   }, []);
 
   const subtitleMaterial = useMemo(() => {
     const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color('#636b85'),
-      emissive: new THREE.Color('#a8b0ff'),
-      emissiveIntensity: 0.25,
+      color: new THREE.Color('#2f3c4a'),
+      emissive: new THREE.Color('#a1bdc7'),
+      emissiveIntensity: 0.35,
       roughness: 0.32,
     });
     return material;
@@ -47,9 +47,9 @@ export function SceneIntro() {
 
   const glowMaterial = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
-      color: '#f0f2ff',
-      emissive: new THREE.Color('#f4f6ff'),
-      emissiveIntensity: 1.1,
+      color: '#f2ece0',
+      emissive: new THREE.Color('#fbf4e6'),
+      emissiveIntensity: 0.95,
       roughness: 0.9,
     });
     mat.transparent = true;
@@ -67,16 +67,16 @@ export function SceneIntro() {
 
   return (
     <group>
-      <color attach="background" args={['#ffffff']} />
-      <fog attach="fog" args={[0xf6f6ff, 18, 32]} />
+      <color attach="background" args={['#dfd7c5']} />
+      <fog attach="fog" args={[0xdfd7c5, 18, 32]} />
 
-      <ambientLight intensity={0.85} color={0xffffff} />
-      <directionalLight position={[2.4, 5.2, 3.6]} intensity={0.65} color={0xffe9d6} castShadow />
-      <directionalLight position={[-4, 3.5, -2.5]} intensity={0.5} color={0xd9e3ff} />
-      <pointLight position={[0, 2.6, 1.8]} intensity={0.9} color={0xc8d3ff} />
+      <ambientLight intensity={0.75} color={0xdfd7c5} />
+      <directionalLight position={[2.4, 5.2, 3.6]} intensity={0.6} color={0xffe2c6} castShadow />
+      <directionalLight position={[-4, 3.5, -2.5]} intensity={0.45} color={0xbecbdb} />
+      <pointLight position={[0, 2.6, 1.8]} intensity={0.85} color={0xa1bdc7} />
 
       <mesh position={[0, 1.35, -1.2]}>
-        <planeGeometry args={[6.2, 3.7]} />
+        <planeGeometry args={[6.4, 3.9]} />
         <primitive object={glowMaterial} />
       </mesh>
 
@@ -103,16 +103,16 @@ export function SceneIntro() {
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
         <circleGeometry args={[12, 56]} />
-        <meshStandardMaterial color="#ecefff" roughness={0.94} metalness={0.03} />
+        <meshStandardMaterial color="#efe5d3" roughness={0.93} metalness={0.04} />
       </mesh>
 
       <mesh position={[-2.4, 2.4, -2.6]}>
         <sphereGeometry args={[0.45, 32, 32]} />
-        <meshStandardMaterial emissive="#8266ff" emissiveIntensity={1.2} color="#ebe5ff" />
+        <meshStandardMaterial emissive="#6b4cf0" emissiveIntensity={1.1} color="#d8c8ff" />
       </mesh>
       <mesh position={[2.8, 1.4, -1.2]}>
         <sphereGeometry args={[0.32, 32, 32]} />
-        <meshStandardMaterial emissive="#ffb67f" emissiveIntensity={0.9} color="#fff0dd" />
+        <meshStandardMaterial emissive="#d38a54" emissiveIntensity={0.8} color="#f5d6b4" />
       </mesh>
     </group>
   );

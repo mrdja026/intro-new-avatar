@@ -3,6 +3,7 @@ import { TransformControls } from '@react-three/drei';
 import type { Group } from 'three';
 import { useThree, type Euler } from '@react-three/fiber';
 import type { OrbitControls as OrbitControlsImpl, TransformControls as TransformControlsImpl } from 'three-stdlib';
+import { useFrame } from '@react-three/fiber';
 
 import { ComputerModel } from '../components/ComputerModel';
 import { SittingManModel } from '../components/SittingManModel';
@@ -18,6 +19,31 @@ const CODE_CAMERA_DEFAULT = {
   target: [0.05, 1.05, 0] as [number, number, number],
 };
 
+const TRANSFORM_EPSILON = 1e-4;
+
+function cloneTransformState(state: TransformState): TransformState {
+  return {
+    position: [...state.position] as [number, number, number],
+    rotation: [...state.rotation] as [number, number, number],
+    scale: [...state.scale] as [number, number, number],
+  };
+}
+
+function transformsDiffer(a: TransformState, b: TransformState): boolean {
+  for (let i = 0; i < 3; i += 1) {
+    if (Math.abs(a.position[i] - b.position[i]) > TRANSFORM_EPSILON) {
+      return true;
+    }
+    if (Math.abs(a.rotation[i] - b.rotation[i]) > TRANSFORM_EPSILON) {
+      return true;
+    }
+    if (Math.abs(a.scale[i] - b.scale[i]) > TRANSFORM_EPSILON) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function SceneCode() {
   const { camera, controls } = useThree();
   const orbit = controls as OrbitControlsImpl | undefined;
@@ -31,14 +57,16 @@ export function SceneCode() {
   const updateTransform = useTransformStore((state) => state.updateTransform);
   const setCameraState = useTransformStore((state) => state.setCameraState);
   const cameraState = useTransformStore((state) => state.cameras.coding);
+  const transformCacheRef = useRef<TransformState>(
+    cloneTransformState(useTransformStore.getState().transforms.coding),
+  );
 
-  const applyTransform = useCallback((next?: TransformState) => {
+  const applyTransform = useCallback((next: TransformState) => {
     const node = characterRef.current;
     if (!node) {
       return;
     }
-    const { position, rotation, scale } =
-      next ?? useTransformStore.getState().transforms.coding;
+    const { position, rotation, scale } = next;
     node.position.set(...position);
     node.rotation.set(...rotation);
     node.scale.set(...scale);
@@ -78,25 +106,24 @@ export function SceneCode() {
   }, [orbit, camera, setCameraState]);
 
   useEffect(() => {
-    applyTransform();
-    let previous = useTransformStore.getState().transforms.coding;
-    const unsubscribe = useTransformStore.subscribe((state) => {
-      const next = state.transforms.coding;
-      if (
-        next.position === previous.position &&
-        next.rotation === previous.rotation &&
-        next.scale === previous.scale
-      ) {
+    const initial = useTransformStore.getState().transforms.coding;
+    transformCacheRef.current = cloneTransformState(initial);
+    applyTransform(initial);
+
+    const unsubscribe = useTransformStore.subscribe((state) => state.transforms.coding, (next) => {
+      if (!transformsDiffer(next, transformCacheRef.current)) {
         return;
       }
-      previous = next;
-      applyTransform(next);
+      const cloned = cloneTransformState(next);
+      transformCacheRef.current = cloned;
+      applyTransform(cloned);
     });
+
     return unsubscribe;
   }, [applyTransform]);
 
   useEffect(() => {
-    applyTransform();
+    applyTransform(transformCacheRef.current);
   }, [applyTransform, editMode]);
 
   useTransformOrbitLock(controlsRef, editMode);
@@ -104,12 +131,34 @@ export function SceneCode() {
   const handleObjectChange = () => {
     const node = characterRef.current;
     if (!node) return;
-    updateTransform('coding', {
+    const next: TransformState = {
       position: [node.position.x, node.position.y, node.position.z],
       rotation: [node.rotation.x, node.rotation.y, node.rotation.z],
       scale: [node.scale.x, node.scale.y, node.scale.z],
-    });
+    };
+    transformCacheRef.current = cloneTransformState(next);
+    updateTransform('coding', next);
   };
+
+  useFrame(() => {
+    if (!editMode) {
+      return;
+    }
+    const node = characterRef.current;
+    if (!node) {
+      return;
+    }
+    const current: TransformState = {
+      position: [node.position.x, node.position.y, node.position.z],
+      rotation: [node.rotation.x, node.rotation.y, node.rotation.z],
+      scale: [node.scale.x, node.scale.y, node.scale.z],
+    };
+    if (!transformsDiffer(current, transformCacheRef.current)) {
+      return;
+    }
+    transformCacheRef.current = cloneTransformState(current);
+    updateTransform('coding', current);
+  });
 
   return (
     <group>
@@ -138,5 +187,3 @@ export function SceneCode() {
     </group>
   );
 }
-
-

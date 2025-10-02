@@ -5,7 +5,6 @@ import type { OrbitControls as OrbitControlsImpl, TransformControls as Transform
 import type { Group } from "three";
 import * as THREE from "three";
 
-import { BedModel } from "../components/BedModel";
 import { ManModel } from "../components/ManModel";
 import { RoomModel } from "../components/RoomModel";
 import { useTransformStore, type TransformState } from "../store/transforms";
@@ -97,13 +96,13 @@ export function SceneSleep() {
   const updateTransform = useTransformStore((state) => state.updateTransform);
   const setCameraState = useTransformStore((state) => state.setCameraState);
   const cameraState = useTransformStore((state) => state.cameras.sleeping);
-  const applyTransform = useCallback((next?: TransformState) => {
+  const transformCacheRef = useRef<TransformState>(useTransformStore.getState().transforms.sleeping);
+  const applyTransform = useCallback((next: TransformState) => {
     const node = characterRef.current;
     if (!node) {
       return;
     }
-    const { position, rotation, scale } =
-      next ?? useTransformStore.getState().transforms.sleeping;
+    const { position, rotation, scale } = next;
     node.position.set(...position);
     node.rotation.set(...rotation);
     node.scale.set(...scale);
@@ -145,25 +144,24 @@ export function SceneSleep() {
   useTransformOrbitLock(controlsRef, editMode);
 
   useEffect(() => {
-    applyTransform();
-    let previous = useTransformStore.getState().transforms.sleeping;
+    const initial = useTransformStore.getState().transforms.sleeping;
+    transformCacheRef.current = initial;
+    applyTransform(initial);
+
     const unsubscribe = useTransformStore.subscribe((state) => {
       const next = state.transforms.sleeping;
-      if (
-        next.position === previous.position &&
-        next.rotation === previous.rotation &&
-        next.scale === previous.scale
-      ) {
+      if (transformCacheRef.current === next) {
         return;
       }
-      previous = next;
+      transformCacheRef.current = next;
       applyTransform(next);
     });
+
     return unsubscribe;
   }, [applyTransform]);
 
   useEffect(() => {
-    applyTransform();
+    applyTransform(transformCacheRef.current);
   }, [applyTransform, editMode]);
 
   const handleObjectChange = useCallback(() => {
@@ -192,7 +190,6 @@ export function SceneSleep() {
       <RoomModel position={ROOM_OFFSET} scale={ROOM_SCALE} rotation={ROOM_ROTATION} />
 
       <group position={BED_OFFSET}>
-        <BedModel scale={0.62} />
         {editMode ? (
           <TransformControls ref={controlsRef} mode={controlMode} onObjectChange={handleObjectChange}>
             <group ref={characterRef}>

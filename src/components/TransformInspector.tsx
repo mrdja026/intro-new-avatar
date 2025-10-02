@@ -72,6 +72,8 @@ export function TransformInspector() {
     setEditMode,
     setControlMode,
     updateTransform,
+    saveStateSnapshot,
+    loadStateSnapshot,
   } = useTransformStore();
 
   const transform = transforms[activePose];
@@ -162,6 +164,45 @@ export function TransformInspector() {
             {MODE_LABELS[mode]}
           </button>
         ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          type="button"
+          onClick={saveStateSnapshot}
+          style={{
+            flex: 1,
+            padding: "4px 6px",
+            background: "rgba(24, 18, 42, 0.85)",
+            border: "1px solid rgba(110, 90, 210, 0.5)",
+            borderRadius: 4,
+            color: "#ede8ff",
+            fontSize: 11,
+            letterSpacing: 0.3,
+            textTransform: "uppercase",
+            cursor: "pointer",
+          }}
+        >
+          Save State
+        </button>
+        <button
+          type="button"
+          onClick={loadStateSnapshot}
+          style={{
+            flex: 1,
+            padding: "4px 6px",
+            background: "rgba(14, 20, 30, 0.85)",
+            border: "1px solid rgba(110, 140, 210, 0.45)",
+            borderRadius: 4,
+            color: "#d4e5ff",
+            fontSize: 11,
+            letterSpacing: 0.3,
+            textTransform: "uppercase",
+            cursor: "pointer",
+          }}
+        >
+          Load State
+        </button>
       </div>
 
       <InspectorField
